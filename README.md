@@ -1,36 +1,218 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ToDo App z Next.js in Sanity
 
-## Getting Started
+ToDo aplikacija zgrajena z Next.js 15, NextAuth.js in Sanity kot bazo podatkov.
 
-First, run the development server:
+## 🚀 Funkcionalnosti
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Avtentikacija**: Prijava/registracija z NextAuth.js
+- **Upravljanje opravil**: Dodajanje, urejanje, brisanje in označevanje opravil
+- **Admin panel**: Pregled vseh opravil in uporabnikov
+- **Sanity CMS**: Uporaba Sanity kot baze podatkov
+- **Responsivni dizajn**: Deluje na desktop in mobilnih napravah
+
+## 📋 Zahteve
+
+- Node.js 18+
+- Sanity projekt z API ključem
+
+## 🛠 Namestitev
+
+1. **Klonirajte repozitorij:**
+   ```bash
+   git clone <your-repo-url>
+   cd todolist1
+   ```
+
+2. **Namestite odvisnosti:**
+   ```bash
+   npm install
+   ```
+
+3. **Nastavite okoljske spremenljivke:**
+   Uredite `.env` datoteko z vašimi Sanity podatki:
+   ```env
+   # Sanity configuration
+   SANITY_PROJECT_ID="l0n7s8js"
+   SANITY_DATASET="production"
+   SANITY_API_TOKEN="your-api-token-here"
+
+   # NextAuth configuration
+   NEXTAUTH_SECRET="your-secret-key-here"
+   ```
+
+4. **Zaženite aplikacijo:**
+   ```bash
+   npm run dev
+   ```
+
+## 📊 Nastavitev Sanity podatkov
+
+### 1. Ustvarite sheme v Sanity
+
+Aplikacija uporablja naslednje sheme v Sanity:
+
+**User shema:**
+```javascript
+{
+  name: 'user',
+  title: 'User',
+  type: 'document',
+  fields: [
+    {
+      name: 'email',
+      title: 'Email',
+      type: 'string',
+      validation: Rule => Rule.required().email()
+    },
+    {
+      name: 'username',
+      title: 'Username',
+      type: 'string',
+      validation: Rule => Rule.required()
+    },
+    {
+      name: 'role',
+      title: 'Role',
+      type: 'string',
+      options: { list: ['user', 'admin'] },
+      initialValue: 'user'
+    },
+    {
+      name: 'createdAt',
+      title: 'Created At',
+      type: 'datetime'
+    }
+  ]
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Todo shema:**
+```javascript
+{
+  name: 'todo',
+  title: 'Todo',
+  type: 'document',
+  fields: [
+    {
+      name: 'title',
+      title: 'Title',
+      type: 'string',
+      validation: Rule => Rule.required()
+    },
+    {
+      name: 'description',
+      title: 'Description',
+      type: 'text'
+    },
+    {
+      name: 'completed',
+      title: 'Completed',
+      type: 'boolean',
+      initialValue: false
+    },
+    {
+      name: 'user',
+      title: 'User',
+      type: 'reference',
+      to: [{ type: 'user' }],
+      validation: Rule => Rule.required()
+    },
+    {
+      name: 'createdAt',
+      title: 'Created At',
+      type: 'datetime'
+    }
+  ]
+}
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Dodajte testne podatke
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Ustvarite uporabnike in opravila v Sanity Studio ali uporabite API.
 
-## Learn More
+**Primer uporabnikov:**
+- Admin: `admin@test.com` (vloga: admin)
+- User: `user@test.com` (vloga: user)
 
-To learn more about Next.js, take a look at the following resources:
+## 🎯 Uporaba aplikacije
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Registracija/Prijava
+1. Pojdite na `/signup` za registracijo
+2. Ali na `/login` za prijavo
+3. Uporabite katerokoli geslo za testne uporabnike
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Dashboard
+- Pregled vaših opravil
+- Dodajanje novih opravil
+- Urejanje/brisanje obstoječih opravil
 
-## Deploy on Vercel
+### Admin panel
+- Dostopen samo za uporabnike z vlogo "admin"
+- Pregled vseh opravil in uporabnikov
+- Upravljanje opravil vseh uporabnikov
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📱 API Endpoints
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Avtentikacija
+- `POST /api/auth/signup` - Registracija
+- `POST /api/auth/signin` - Prijava
+- `POST /api/auth/signout` - Odjava
+
+### Oprvila
+- `GET /api/todos` - Pridobi opravila uporabnika
+- `POST /api/todos` - Ustvari novo opravilo
+- `GET /api/todos/[id]` - Pridobi specifično opravilo
+- `PATCH /api/todos/[id]` - Posodobi opravilo
+- `DELETE /api/todos/[id]` - Izbriši opravilo
+
+### Admin
+- `GET /api/admin/todos/[id]` - Admin operacije z opravili
+
+## 🚀 Objava na Vercel
+
+1. **Push kode na GitHub**
+2. **Povežite z Vercel:**
+   - Uvozite projekt iz GitHub
+   - Dodajte okoljske spremenljivke v Vercel dashboard
+   - Deploy
+
+3. **Nastavite okoljske spremenljivke v Vercel:**
+   ```
+   SANITY_PROJECT_ID=l0n7s8js
+   SANITY_DATASET=production
+   SANITY_API_TOKEN=your-api-token
+   NEXTAUTH_SECRET=your-secret-key
+   NEXTAUTH_URL=https://your-vercel-domain.vercel.app
+   ```
+
+## 🐛 Odpravljanje težav
+
+### NextAuth CLIENT_FETCH_ERROR
+- Preverite `NEXTAUTH_URL` okoljske spremenljivke
+- Za lokalni razvoj: `http://localhost:3000`
+- Za produkcijo: vaš Vercel URL
+
+### Sanity napake
+- Preverite API token permissions
+- Preverite project ID in dataset ime
+- Preverite omrežne povezave
+
+### Build napake
+- Počistite npm cache: `npm cache clean --force`
+- Ponovno namestite odvisnosti: `rm -rf node_modules && npm install`
+
+## 📚 Tehnologije
+
+- **Frontend:** Next.js 15, React 19, TypeScript
+- **Styling:** Tailwind CSS
+- **Avtentikacija:** NextAuth.js v4
+- **Baza podatkov:** Sanity CMS
+- **Deployment:** Vercel
+
+## 🤝 Prispevki
+
+Za prispevke ali vprašanja odprite issue ali pull request.
+
+## 📄 Licenca
+
+Ta projekt je odprt za uporabo v izobraževalne namene.

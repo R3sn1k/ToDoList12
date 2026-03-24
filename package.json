@@ -6,12 +6,29 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:migrate-to-sanity": "tsx prisma/migrate-to-sanity.ts",
+    "db:seed-sanity": "tsx prisma/seed-sanity.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@prisma/client": "^7.5.0",
+    "@sanity/client": "^7.20.0",
+    "@sanity/image-url": "^2.0.3",
+    "@sanity/vision": "^5.17.1",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
     "next": "16.2.1",
+    "next-auth": "^4.24.13",
+    "next-sanity": "^12.1.5",
+    "prisma": "^7.5.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.72.0",
+    "sanity": "^5.17.1",
+    "styled-components": "^6.3.12",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -21,6 +38,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

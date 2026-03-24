@@ -1,0 +1,237 @@
+"use client"
+
+import { useMemo, useState } from "react"
+import type { SanityTodo, SanityUser } from "@/lib/sanity-utils"
+
+interface AdminTodoListProps {
+  initialTodos: SanityTodo[]
+  users: SanityUser[]
+}
+
+export default function AdminTodoList({ initialTodos, users }: AdminTodoListProps) {
+  const [todos, setTodos] = useState(initialTodos)
+  const [selectedUser, setSelectedUser] = useState("all")
+  const [error, setError] = useState("")
+
+  const filteredTodos = useMemo(() => {
+    if (selectedUser === "all") {
+      return todos
+    }
+
+    return todos.filter((todo) => todo.user._id === selectedUser)
+  }, [selectedUser, todos])
+
+  const deleteTodo = async (id: string) => {
+    try {
+      const response = await fetch(`/api/admin/todos/${id}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Delete failed")
+      }
+
+      setTodos((current) => current.filter((todo) => todo._id !== id))
+    } catch (err) {
+      console.error("Error deleting todo:", err)
+      setError("Naloge ni bilo mogoce izbrisati.")
+    }
+  }
+
+  const toggleTodo = async (id: string) => {
+    const currentTodo = todos.find((todo) => todo._id === id)
+    if (!currentTodo) return
+
+    try {
+      const response = await fetch(`/api/admin/todos/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ completed: !currentTodo.completed }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Update failed")
+      }
+
+      const updatedTodo = await response.json()
+      setTodos((current) =>
+        current.map((todo) => (todo._id === id ? updatedTodo : todo))
+      )
+    } catch (err) {
+      console.error("Error toggling todo:", err)
+      setError("Naloge ni bilo mogoce posodobiti.")
+    }
+  }
+
+  return (
+    <section className="space-y-6">
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_2fr]">
+        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-950">Filtri</h2>
+          <p className="mt-1 text-sm text-slate-500">Omeji pregled po posameznem uporabniku.</p>
+          <select
+            value={selectedUser}
+            onChange={(event) => setSelectedUser(event.target.value)}
+            className="mt-4 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none transition focus:border-sky-500"
+          >
+            <option value="all">Vsi uporabniki</option>
+            {users.map((user) => (
+              <option key={user._id} value={user._id}>
+                {user.username} ({user.email})
+              </option>
+            ))}
+          </select>
+        </article>
+
+        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-950">Povzetek</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Skupaj uporabnikov</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{users.length}</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Skupaj nalog</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{todos.length}</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Filtriran prikaz</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{filteredTodos.length}</p>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      {error ? (
+        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-6 py-4">
+          <h2 className="text-xl font-semibold text-slate-950">Vsa opravila</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Naloga
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Uporabnik
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Datum
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Akcije
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {filteredTodos.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
+                    Ni podatkov za izbran filter.
+                  </td>
+                </tr>
+              ) : (
+                filteredTodos.map((todo) => (
+                  <tr key={todo._id}>
+                    <td className="px-6 py-4 align-top">
+                      <input
+                        type="checkbox"
+                        checked={todo.completed}
+                        onChange={() => toggleTodo(todo._id)}
+                        className="h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4 align-top">
+                      <div className="space-y-1">
+                        <p className="font-medium text-slate-900">{todo.title}</p>
+                        {todo.description ? (
+                          <p className="text-sm text-slate-500">{todo.description}</p>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 align-top text-sm text-slate-600">
+                      <p className="font-medium text-slate-900">{todo.user.username}</p>
+                      <p>{todo.user.email}</p>
+                    </td>
+                    <td className="px-6 py-4 align-top text-sm text-slate-500">
+                      {new Date(todo.createdAt).toLocaleDateString("sl-SI")}
+                    </td>
+                    <td className="px-6 py-4 align-top">
+                      <button
+                        type="button"
+                        onClick={() => deleteTodo(todo._id)}
+                        className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+                      >
+                        Izbrisi
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-6 py-4">
+          <h2 className="text-xl font-semibold text-slate-950">Uporabniki</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Uporabnisko ime
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  E-posta
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Vloga
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Registracija
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {users.map((user) => (
+                <tr key={user._id}>
+                  <td className="px-6 py-4 text-sm font-medium text-slate-900">{user.username}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
+                  <td className="px-6 py-4 text-sm">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        user.role === "admin"
+                          ? "bg-rose-100 text-rose-700"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}
+                    >
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-500">
+                    {new Date(user.createdAt).toLocaleDateString("sl-SI")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  )
+}
