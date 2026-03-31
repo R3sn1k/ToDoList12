@@ -96,7 +96,7 @@ export default function Signup() {
         <div className="mb-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">Registracija</p>
           <h1 className="mt-3 text-3xl font-semibold text-slate-950">Ustvari nov racun</h1>
-          <p className="mt-2 text-sm text-slate-500">Pripravi si svoj dashboard za dnevne naloge.</p>
+          <p className="mt-2 text-sm text-slate-500">Ustvari si TaskFlow workspace za taske, roke in prioritete.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

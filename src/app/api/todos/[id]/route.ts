@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { client } from "@/lib/sanity"
-import { updateTodo, deleteTodo } from "@/lib/sanity-utils"
+import { deleteTodo, getTodoByIdForUser, updateTodo } from "@/lib/sanity-utils"
 
 export async function GET(
   request: NextRequest,
@@ -15,19 +14,7 @@ export async function GET(
     }
 
     const { id } = await params
-
-    const todo = await client.fetch(`*[_type == "todo" && _id == $id && user._ref == $userId][0] {
-      _id,
-      title,
-      description,
-      completed,
-      createdAt,
-      user->{
-        _id,
-        username,
-        email
-      }
-    }`, { id, userId: session.user.id })
+    const todo = await getTodoByIdForUser(id, session.user.id)
 
     if (!todo) {
       return NextResponse.json({ error: "Todo not found" }, { status: 404 })
@@ -52,22 +39,32 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const { title, description, completed } = await request.json()
+    const { title, description, completed, dueDate, priority, priorityRank, subtasks } =
+      await request.json()
 
-    // Check if todo exists and belongs to user
-    const existingTodo = await client.fetch(`*[_type == "todo" && _id == $id && user._ref == $userId][0]`, {
-      id,
-      userId: session.user.id
-    })
+    const existingTodo = await getTodoByIdForUser(id, session.user.id)
 
     if (!existingTodo) {
       return NextResponse.json({ error: "Todo not found" }, { status: 404 })
     }
 
-    const updates: Record<string, string | boolean> = {}
+    const updates: {
+      title?: string
+      description?: string
+      completed?: boolean
+      dueDate?: string | null
+      priority?: boolean
+      priorityRank?: number
+      subtasks?: { _key?: string; title: string; completed: boolean }[]
+    } = {}
+
     if (title !== undefined) updates.title = title
     if (description !== undefined) updates.description = description
     if (completed !== undefined) updates.completed = completed
+    if (dueDate !== undefined) updates.dueDate = dueDate
+    if (priority !== undefined) updates.priority = priority
+    if (priorityRank !== undefined) updates.priorityRank = priorityRank
+    if (subtasks !== undefined) updates.subtasks = subtasks
 
     const updatedTodo = await updateTodo(id, updates)
 
@@ -91,11 +88,7 @@ export async function DELETE(
 
     const { id } = await params
 
-    // Check if todo exists and belongs to user
-    const existingTodo = await client.fetch(`*[_type == "todo" && _id == $id && user._ref == $userId][0]`, {
-      id,
-      userId: session.user.id
-    })
+    const existingTodo = await getTodoByIdForUser(id, session.user.id)
 
     if (!existingTodo) {
       return NextResponse.json({ error: "Todo not found" }, { status: 404 })

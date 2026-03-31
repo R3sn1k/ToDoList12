@@ -2,7 +2,11 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import TodoList from "@/components/TodoList"
 import { NavBar } from "@/components/NavBar"
-import { getTodosByUser } from "@/lib/sanity-utils"
+import {
+  getNotificationsForUser,
+  getTaskInvitationsForUser,
+  getTodosByUser,
+} from "@/lib/sanity-utils"
 
 export default async function Dashboard() {
   const session = await auth()
@@ -11,21 +15,25 @@ export default async function Dashboard() {
     redirect("/login")
   }
 
-  const todos = await getTodosByUser(session.user.id)
+  const [todos, invitations, notifications] = await Promise.all([
+    getTodosByUser(session.user.id),
+    session.user.email
+      ? getTaskInvitationsForUser(session.user.email, session.user.id)
+      : Promise.resolve([]),
+    getNotificationsForUser(session.user.id),
+  ])
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <NavBar title="TaskFlow Dashboard" />
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col gap-2">
-          <p className="text-sm font-medium text-sky-700">Pozdravljen, {session.user.name}</p>
-          <h1 className="text-4xl font-semibold text-slate-950">Tvoje dnevne naloge</h1>
-          <p className="max-w-2xl text-slate-600">
-            Dodajaj, urejaj in spremljaj napredek. Dashboard je zasciten in prikazuje samo tvoje podatke.
-          </p>
-        </div>
-
-        <TodoList initialTodos={todos} />
+    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f3efe6_0%,#ecf2f4_46%,#f8fafc_100%)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.16),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.16),_transparent_36%)]" />
+      <NavBar title="TaskFlow" />
+      <main className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <TodoList
+          initialTodos={todos}
+          initialInvitations={invitations}
+          initialNotifications={notifications}
+          isAdmin={session.user.role === "admin"}
+        />
       </main>
     </div>
   )

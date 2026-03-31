@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "TaskFlow ToDo App",
-  description: "ToDo aplikacija z avtentikacijo, dashboardom, profilom in admin delom.",
+  title: "TaskFlow",
+  description: "TaskFlow je napreden workspace za taske, prioritete, delegiranje in osebni fokus.",
 };
 
 export default function RootLayout({

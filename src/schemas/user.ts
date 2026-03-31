@@ -1,44 +1,47 @@
-import { defineType, defineField } from 'sanity'
+import { defineField, defineType } from "sanity"
 
 export const user = defineType({
-  name: 'user',
-  title: 'User',
-  type: 'document',
+  name: "user",
+  title: "Uporabnik",
+  type: "document",
   fields: [
     defineField({
-      name: 'email',
-      title: 'Email',
-      type: 'string',
-      validation: (rule) => rule.required().email()
+      name: "email",
+      title: "E-posta",
+      type: "string",
+      validation: (rule) => rule.required().email(),
     }),
     defineField({
-      name: 'username',
-      title: 'Username',
-      type: 'string',
-      validation: (rule) => rule.required()
+      name: "username",
+      title: "Uporabniško ime",
+      type: "string",
+      validation: (rule) => rule.required(),
     }),
     defineField({
-      name: 'passwordHash',
-      title: 'Password Hash',
-      type: 'string',
+      name: "passwordHash",
+      title: "Zgoščeno geslo",
+      type: "string",
       hidden: true,
       readOnly: true,
-      validation: (rule) => rule.required()
+      validation: (rule) => rule.required(),
     }),
     defineField({
-      name: 'role',
-      title: 'Role',
-      type: 'string',
+      name: "role",
+      title: "Vloga",
+      type: "string",
       options: {
-        list: ['user', 'admin']
+        list: [
+          { title: "Uporabnik", value: "user" },
+          { title: "Skrbnik", value: "admin" },
+        ],
       },
-      initialValue: 'user'
+      initialValue: "user",
     }),
     defineField({
-      name: 'createdAt',
-      title: 'Created At',
-      type: 'datetime',
-      initialValue: () => new Date().toISOString()
-    })
-  ]
+      name: "createdAt",
+      title: "Ustvarjeno",
+      type: "datetime",
+      initialValue: () => new Date().toISOString(),
+    }),
+  ],
 })

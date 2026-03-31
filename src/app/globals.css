@@ -1,19 +1,68 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f4efe5;
+  --foreground: #101828;
+  --panel: rgba(255, 255, 255, 0.7);
+  --panel-strong: rgba(15, 23, 42, 0.92);
+  --line: rgba(15, 23, 42, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-sans: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
   --font-mono: "Consolas", "Courier New", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  background-image:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at top, rgba(249, 115, 22, 0.08), transparent 28%);
+}
+
+::selection {
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.animate-fade-up {
+  animation: fade-up 0.85s cubic-bezier(0.21, 1, 0.31, 1) both;
+}
+
+.animate-fade-up-delayed {
+  animation: fade-up 1s cubic-bezier(0.21, 1, 0.31, 1) 0.12s both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-fade-up,
+  .animate-fade-up-delayed {
+    animation: none;
+  }
 }

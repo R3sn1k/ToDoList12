@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { title, description } = await request.json()
+    const { title, description, dueDate, priority, subtasks } = await request.json()
 
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 })
@@ -20,6 +20,9 @@ export async function POST(request: NextRequest) {
       title,
       description,
       userId: session.user.id,
+      dueDate: dueDate || undefined,
+      priority: Boolean(priority),
+      subtasks: Array.isArray(subtasks) ? subtasks : [],
     })
 
     return NextResponse.json(todo, { status: 201 })
