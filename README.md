@@ -35,9 +35,12 @@ ToDo aplikacija zgrajena z Next.js 15, NextAuth.js in Sanity kot bazo podatkov.
    SANITY_PROJECT_ID="l0n7s8js"
    SANITY_DATASET="production"
    SANITY_API_TOKEN="your-api-token-here"
+   NEXT_PUBLIC_SANITY_PROJECT_ID="l0n7s8js"
+   NEXT_PUBLIC_SANITY_DATASET="production"
 
    # NextAuth configuration
    NEXTAUTH_SECRET="your-secret-key-here"
+   NEXTAUTH_URL="http://localhost:3000"
    ```
 
 4. **Zaženite aplikacijo:**
@@ -180,6 +183,8 @@ Ustvarite uporabnike in opravila v Sanity Studio ali uporabite API.
    ```
    SANITY_PROJECT_ID=l0n7s8js
    SANITY_DATASET=production
+   NEXT_PUBLIC_SANITY_PROJECT_ID=l0n7s8js
+   NEXT_PUBLIC_SANITY_DATASET=production
    SANITY_API_TOKEN=your-api-token
    NEXTAUTH_SECRET=your-secret-key
    NEXTAUTH_URL=https://your-vercel-domain.vercel.app
