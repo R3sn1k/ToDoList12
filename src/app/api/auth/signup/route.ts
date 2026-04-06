@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
+import { generateRecoveryCode, passwordSchema } from "@/lib/password"
 import { createUser, getUserByEmail } from "@/lib/sanity-utils"
 
 const signupSchema = z.object({
   email: z.email("Neveljaven e-naslov").trim(),
   username: z.string().trim().min(3, "Uporabnisko ime mora imeti vsaj 3 znake"),
-  password: z
-    .string()
-    .min(8, "Geslo mora biti dolgo vsaj 8 znakov")
-    .regex(/[A-Za-z]/, "Geslo mora vsebovati vsaj eno crko")
-    .regex(/[0-9]/, "Geslo mora vsebovati vsaj eno stevilko"),
+  password: passwordSchema,
 })
 
 export async function POST(request: NextRequest) {
@@ -35,16 +32,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const passwordHash = await bcrypt.hash(password, 12)
+    const recoveryCode = generateRecoveryCode()
+    const [passwordHash, recoveryCodeHash] = await Promise.all([
+      bcrypt.hash(password, 12),
+      bcrypt.hash(recoveryCode, 12),
+    ])
     const user = await createUser({
       email,
       username,
       passwordHash,
+      recoveryCodeHash,
       role: "user",
     })
 
     return NextResponse.json(
-      { message: "Uporabnik uspesno ustvarjen", userId: user._id },
+      { message: "Uporabnik uspesno ustvarjen", userId: user._id, recoveryCode },
       { status: 201 }
     )
   } catch (error) {

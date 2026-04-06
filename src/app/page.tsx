@@ -27,12 +27,6 @@ const metrics = [
   { value: "100%", label: "odziven vmesnik" },
 ]
 
-const workflow = [
-  "Ustvari racun in odpri svoj osebni prostor.",
-  "Dodaj naloge, oznaci prioritete in spremljaj napredek.",
-  "Razsiri aplikacijo z admin vmesnikom in Sanity vsebino.",
-]
-
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f3efe6_0%,#f6f1e8_18%,#dce7ec_52%,#f8fafc_100%)] text-slate-950">
@@ -65,7 +59,7 @@ export default function Home() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-        <section className="grid gap-10 pb-18 pt-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:pb-24 lg:pt-12">
+        <section className="pb-18 pt-8 lg:pb-24 lg:pt-12">
           <div className="animate-fade-up">
             <div className="inline-flex items-center gap-3 rounded-full border border-white/60 bg-white/55 px-4 py-2 text-sm text-slate-700 shadow-[0_12px_40px_-24px_rgba(15,23,42,0.35)] backdrop-blur">
               <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
@@ -107,71 +101,6 @@ export default function Home() {
                   <p className="mt-2 text-sm text-slate-600">{metric.label}</p>
                 </article>
               ))}
-            </div>
-          </div>
-
-          <div className="animate-fade-up-delayed">
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-900/10 bg-[#0f172a] p-6 text-white shadow-[0_32px_120px_-36px_rgba(15,23,42,0.65)]">
-              <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.4),_transparent_58%)]" />
-              <div className="relative">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Osrednji pregled</p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight">Danes obvladas vse.</p>
-                  </div>
-                  <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-slate-200">
-                    v zivo
-                  </div>
-                </div>
-
-                <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-[1.8rem] border border-white/10 bg-white/5 p-5">
-                    <p className="text-sm text-slate-400">Momentum</p>
-                    <p className="mt-2 text-4xl font-semibold">84%</p>
-                    <p className="mt-3 text-sm text-slate-300">
-                      Zakljucene naloge in aktivni fokus znotraj enega pregleda.
-                    </p>
-                  </div>
-                  <div className="rounded-[1.8rem] border border-white/10 bg-white/5 p-5">
-                    <p className="text-sm text-slate-400">Prednostni pas</p>
-                    <div className="mt-4 space-y-3">
-                      {["Produktni redesign", "Client deploy", "Admin nadzor"].map((item) => (
-                        <div
-                          key={item}
-                          className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3 text-sm"
-                        >
-                          <span>{item}</span>
-                          <span className="rounded-full bg-emerald-400/15 px-2 py-1 text-[11px] uppercase tracking-[0.22em] text-emerald-200">
-                            aktivno
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-[1.9rem] border border-white/10 bg-white/5 p-5">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-slate-400">Potek dela</p>
-                      <p className="mt-2 text-lg font-medium text-white">Od zajema do zakljucka brez odvecnega trenja.</p>
-                    </div>
-                    <div className="hidden rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-slate-300 sm:block">
-                      usklajeno
-                    </div>
-                  </div>
-                  <div className="mt-5 grid gap-3">
-                    {workflow.map((step, index) => (
-                      <div key={step} className="flex gap-4 rounded-2xl bg-black/15 px-4 py-4">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
-                          0{index + 1}
-                        </div>
-                        <p className="text-sm leading-6 text-slate-200">{step}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </section>

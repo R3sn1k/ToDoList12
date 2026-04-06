@@ -29,6 +29,11 @@ export async function PATCH(
     return NextResponse.json(response)
   } catch (error) {
     console.error("Error responding to notification:", error)
+
+    if (error instanceof Error && error.message === "Notification expired") {
+      return NextResponse.json({ error: "To obvestilo je ze poteklo." }, { status: 400 })
+    }
+
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

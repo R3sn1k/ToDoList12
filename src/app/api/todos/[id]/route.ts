@@ -94,6 +94,26 @@ export async function DELETE(
       return NextResponse.json({ error: "Todo not found" }, { status: 404 })
     }
 
+    if (existingTodo.isNotificationTask) {
+      return NextResponse.json(
+        { error: "Naloge, sprejete iz obvestil, ni mogoce izbrisati." },
+        { status: 403 }
+      )
+    }
+
+    if (
+      existingTodo.user._id === session.user.id &&
+      existingTodo.createdBy._id !== session.user.id
+    ) {
+      await updateTodo(id, {
+        userId: existingTodo.createdBy._id,
+        priority: false,
+        priorityRank: 999,
+      })
+
+      return NextResponse.json({ message: "Todo removed from user profile" })
+    }
+
     await deleteTodo(id)
 
     return NextResponse.json({ message: "Todo deleted successfully" })

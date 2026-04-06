@@ -5,6 +5,7 @@ export interface SanityUser {
   email: string
   username: string
   passwordHash?: string
+  recoveryCodeHash?: string
   role: "user" | "admin"
   createdAt: string
 }
@@ -36,6 +37,7 @@ export interface SanityTodo {
     username: string
     email: string
   }
+  isNotificationTask: boolean
 }
 
 export interface SanityTaskInvitation {
@@ -89,18 +91,21 @@ interface CreateUserInput {
   email: string
   username: string
   passwordHash: string
+  recoveryCodeHash: string
   role?: "user" | "admin"
 }
 
 interface UpdateUserInput {
   email?: string
   username?: string
+  passwordHash?: string
 }
 
 interface CreateTodoInput {
   title: string
   description?: string
   userId: string
+  createdById?: string
   dueDate?: string
   priority?: boolean
   priorityRank?: number
@@ -123,6 +128,7 @@ const userProjection = `{
   email,
   username,
   passwordHash,
+  recoveryCodeHash,
   role,
   createdAt
 }`
@@ -147,7 +153,8 @@ const todoProjection = `{
     _id,
     username,
     email
-  }
+  },
+  "isNotificationTask": count(*[_type == "notificationResponse" && createdTodo._ref == ^._id]) > 0
 }`
 
 const invitationProjection = `{
@@ -269,6 +276,7 @@ export async function createUser(input: CreateUserInput): Promise<SanityUser> {
     email: input.email,
     username: input.username,
     passwordHash: input.passwordHash,
+    recoveryCodeHash: input.recoveryCodeHash,
     role: input.role ?? "user",
     createdAt,
   })
@@ -278,6 +286,7 @@ export async function createUser(input: CreateUserInput): Promise<SanityUser> {
     email: input.email,
     username: input.username,
     passwordHash: input.passwordHash,
+    recoveryCodeHash: input.recoveryCodeHash,
     role: input.role ?? "user",
     createdAt,
   }
@@ -292,6 +301,10 @@ export async function updateUser(id: string, updates: UpdateUserInput): Promise<
   }
 
   return updatedUser
+}
+
+export async function updateUserPassword(id: string, passwordHash: string): Promise<SanityUser> {
+  return updateUser(id, { passwordHash })
 }
 
 export async function getTodos(): Promise<SanityTodo[]> {
@@ -336,7 +349,7 @@ export async function createTodo(input: CreateTodoInput): Promise<SanityTodo> {
     },
     createdBy: {
       _type: "reference",
-      _ref: input.userId,
+      _ref: input.createdById ?? input.userId,
     },
   })
 
@@ -544,8 +557,15 @@ export async function respondToTaskInvitation(input: {
     .commit()
 
   if (input.status === "accepted") {
-    await updateTodo(invitation.todo._id, {
+    await createTodo({
+      title: invitation.todo.title,
+      description: invitation.todo.description,
+      dueDate: invitation.todo.dueDate,
+      priority: invitation.todo.priority,
+      priorityRank: invitation.todo.priorityRank,
+      subtasks: invitation.todo.subtasks,
       userId: input.userId,
+      createdById: input.userId,
     })
   }
 
@@ -617,10 +637,13 @@ export async function createNotification(input: {
 }
 
 export async function getNotificationsForUser(userId: string): Promise<SanityNotification[]> {
+  const now = new Date().toISOString()
   return client.fetch(
-    `*[_type == "notification" && !(_id in *[_type == "notificationResponse" && user._ref == $userId].notification._ref)]
+    `*[_type == "notification"
+      && !(_id in *[_type == "notificationResponse" && user._ref == $userId].notification._ref)
+      && (!defined(dueDate) || dueDate >= $now)]
       | order(createdAt desc) ${notificationProjection}`,
-    { userId }
+    { userId, now }
   )
 }
 
@@ -638,6 +661,10 @@ export async function respondToNotification(input: {
     throw new Error("Notification not found")
   }
 
+  if (notification.dueDate && new Date(notification.dueDate).getTime() < Date.now()) {
+    throw new Error("Notification expired")
+  }
+
   let createdTodoId: string | undefined
 
   if (input.status === "accepted") {
@@ -646,6 +673,7 @@ export async function respondToNotification(input: {
       description: notification.description,
       dueDate: notification.dueDate,
       userId: input.userId,
+      createdById: notification.createdBy._id,
     })
     createdTodoId = todo._id
   }

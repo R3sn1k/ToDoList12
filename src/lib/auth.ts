@@ -24,13 +24,16 @@ export const authOptions: NextAuthOptions = {
 
         const user = await getUserByEmail(email)
 
-        if (!user?.passwordHash) {
+        if (!user?.passwordHash || !user.recoveryCodeHash) {
           return null
         }
 
-        const isValidPassword = await bcrypt.compare(password, user.passwordHash)
+        const [isValidPassword, isValidRecoveryCode] = await Promise.all([
+          bcrypt.compare(password, user.passwordHash),
+          bcrypt.compare(password, user.recoveryCodeHash),
+        ])
 
-        if (!isValidPassword) {
+        if (!isValidPassword && !isValidRecoveryCode) {
           return null
         }
 

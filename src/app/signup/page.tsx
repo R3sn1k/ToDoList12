@@ -2,10 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 
 export default function Signup() {
-  const router = useRouter()
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -13,6 +11,7 @@ export default function Signup() {
     confirmPassword: "",
   })
   const [error, setError] = useState("")
+  const [recoveryCode, setRecoveryCode] = useState("")
   const [loading, setLoading] = useState(false)
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +80,13 @@ export default function Signup() {
         return
       }
 
-      router.push("/login?message=Registracija uspesna. Prijavi se za nadaljevanje.")
+      setRecoveryCode(data.recoveryCode ?? "")
+      setFormData({
+        email: "",
+        username: "",
+        password: "",
+        confirmPassword: "",
+      })
     } catch (err) {
       console.error("Signup error:", err)
       setError("Registracija ni uspela.")
@@ -98,6 +103,21 @@ export default function Signup() {
           <h1 className="mt-3 text-3xl font-semibold text-slate-950">Ustvari nov racun</h1>
           <p className="mt-2 text-sm text-slate-500">Ustvari si TaskFlow workspace za taske, roke in prioritete.</p>
         </div>
+
+        {recoveryCode ? (
+          <div className="mb-6 rounded-[1.6rem] border border-amber-200 bg-amber-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Recovery code
+            </p>
+            <p className="mt-3 text-2xl font-semibold tracking-[0.2em] text-slate-950">
+              {recoveryCode}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-slate-700">
+              To kodo si shrani. Z njo se lahko prijavis ali ponastavis geslo, ce ga pozabis.
+              Koda se izpise samo enkrat ob registraciji.
+            </p>
+          </div>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block space-y-2">

@@ -246,11 +246,12 @@ export default function TodoList({
     try {
       setError("")
       const response = await fetch(`/api/todos/${id}`, { method: "DELETE" })
-      if (!response.ok) throw new Error("Delete failed")
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error ?? "Delete failed")
       setTodos((current) => current.filter((todo) => todo._id !== id))
     } catch (err) {
       console.error(err)
-      setError("Naloge ni bilo mogoce izbrisati.")
+      setError(err instanceof Error ? err.message : "Naloge ni bilo mogoce izbrisati.")
     }
   }
 
@@ -434,10 +435,15 @@ export default function TodoList({
                       <span>nosilec: {todo.user.username}</span>
                       <span>ustvaril: {todo.createdBy.username}</span>
                     </div>
+                    {todo.isNotificationTask ? (
+                      <p className="mt-3 text-sm text-slate-500">
+                        Ta naloga je bila sprejeta iz admin obvestila, zato je ni mogoce izbrisati.
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" onClick={() => startEditing(todo)} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Uredi</button>
-                    <button type="button" onClick={() => deleteTodo(todo._id)} className="rounded-full bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">Izbriši</button>
+                    {todo.isNotificationTask ? null : <button type="button" onClick={() => deleteTodo(todo._id)} className="rounded-full bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">Izbriši</button>}
                   </div>
                 </div>
                 {todo.subtasks.length > 0 ? (
@@ -547,3 +553,4 @@ export default function TodoList({
     </section>
   )
 }
+

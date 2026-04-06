@@ -9,9 +9,16 @@ export default function Login() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [recoveryReset, setRecoveryReset] = useState({
+    email: "",
+    recoveryCode: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const [loading, setLoading] = useState(false)
+  const [recoveryLoading, setRecoveryLoading] = useState(false)
 
   useEffect(() => {
     const message = new URLSearchParams(window.location.search).get("message") ?? ""
@@ -37,7 +44,7 @@ export default function Login() {
       })
 
       if (result?.error) {
-        setError("Napacna e-posta ali geslo.")
+        setError("Napacna e-posta, geslo ali recovery koda.")
         return
       }
 
@@ -48,6 +55,41 @@ export default function Login() {
       setError("Prijava ni uspela.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRecoveryReset = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError("")
+    setSuccessMessage("")
+    setRecoveryLoading(true)
+
+    try {
+      const response = await fetch("/api/auth/recovery-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(recoveryReset),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error ?? "Ponastavitev gesla ni uspela.")
+        return
+      }
+
+      setSuccessMessage(data.message ?? "Geslo je bilo uspesno ponastavljeno.")
+      setRecoveryReset({
+        email: "",
+        recoveryCode: "",
+        newPassword: "",
+        confirmPassword: "",
+      })
+    } catch (err) {
+      console.error("Recovery reset error:", err)
+      setError("Ponastavitev gesla ni uspela.")
+    } finally {
+      setRecoveryLoading(false)
     }
   }
 
@@ -73,13 +115,13 @@ export default function Login() {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-700">Geslo</span>
+            <span className="text-sm font-medium text-slate-700">Geslo ali recovery code</span>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none transition focus:border-sky-500"
-              placeholder="••••••••"
+              placeholder="Vnesi geslo ali recovery code"
             />
           </label>
 
@@ -109,6 +151,68 @@ export default function Login() {
           <Link href="/signup" className="font-medium text-sky-700 hover:text-sky-800">
             Registracija
           </Link>
+        </div>
+
+        <div className="mt-8 border-t border-slate-200 pt-6">
+          <details className="group rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-slate-900">
+              <span>Ponastavi geslo z recovery kodo</span>
+              <span className="text-slate-500 transition group-open:rotate-180">⌄</span>
+            </summary>
+
+            <p className="mt-3 text-sm text-slate-500">
+              Ce poznas pravilno recovery kodo, si lahko tukaj nastavis novo geslo.
+            </p>
+
+            <form onSubmit={handleRecoveryReset} className="mt-4 space-y-3">
+              <input
+                type="email"
+                value={recoveryReset.email}
+                onChange={(event) =>
+                  setRecoveryReset((current) => ({ ...current, email: event.target.value }))
+                }
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-sky-500"
+                placeholder="E-posta"
+              />
+              <input
+                type="text"
+                value={recoveryReset.recoveryCode}
+                onChange={(event) =>
+                  setRecoveryReset((current) => ({ ...current, recoveryCode: event.target.value }))
+                }
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 uppercase outline-none transition focus:border-sky-500"
+                placeholder="Recovery code"
+              />
+              <input
+                type="password"
+                value={recoveryReset.newPassword}
+                onChange={(event) =>
+                  setRecoveryReset((current) => ({ ...current, newPassword: event.target.value }))
+                }
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-sky-500"
+                placeholder="Novo geslo"
+              />
+              <input
+                type="password"
+                value={recoveryReset.confirmPassword}
+                onChange={(event) =>
+                  setRecoveryReset((current) => ({
+                    ...current,
+                    confirmPassword: event.target.value,
+                  }))
+                }
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-sky-500"
+                placeholder="Potrdi novo geslo"
+              />
+              <button
+                type="submit"
+                disabled={recoveryLoading}
+                className="w-full rounded-2xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {recoveryLoading ? "Nastavljam novo geslo..." : "Nastavi novo geslo"}
+              </button>
+            </form>
+          </details>
         </div>
       </div>
     </div>
