@@ -445,6 +445,51 @@ export async function deleteTodo(id: string): Promise<void> {
   await client.delete(id)
 }
 
+export async function getAllNotifications(): Promise<SanityNotification[]> {
+  return client.fetch(`*[_type == "notification"] | order(createdAt desc) ${notificationProjection}`)
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  const responseIds = await client.fetch<string[]>(
+    `*[_type == "notificationResponse" && notification._ref == $id]._id`,
+    { id }
+  )
+
+  await Promise.all(responseIds.map((responseId) => client.delete(responseId)))
+  await client.delete(id)
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  const [todoIds, invitationIds, notificationIds, responseIds] = await Promise.all([
+    client.fetch<string[]>(
+      `*[_type == "todo" && (user._ref == $id || createdBy._ref == $id)]._id`,
+      { id }
+    ),
+    client.fetch<string[]>(
+      `*[_type == "taskInvitation" && (sender._ref == $id || recipient._ref == $id)]._id`,
+      { id }
+    ),
+    client.fetch<string[]>(`*[_type == "notification" && createdBy._ref == $id]._id`, { id }),
+    client.fetch<string[]>(
+      `*[_type == "notificationResponse" && (user._ref == $id || createdTodo._ref in *[_type == "todo" && (user._ref == $id || createdBy._ref == $id)]._id)]._id`,
+      { id }
+    ),
+  ])
+
+  await Promise.all(responseIds.map((responseId) => client.delete(responseId)))
+  await Promise.all(invitationIds.map((invitationId) => client.delete(invitationId)))
+
+  for (const todoId of [...new Set(todoIds)]) {
+    await deleteTodo(todoId)
+  }
+
+  for (const notificationId of [...new Set(notificationIds)]) {
+    await deleteNotification(notificationId)
+  }
+
+  await client.delete(id)
+}
+
 export async function getTaskInvitationsForUser(
   email: string,
   userId: string

@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import AdminTodoList from "@/components/AdminTodoList"
 import { NavBar } from "@/components/NavBar"
-import { getTodos, getUsers } from "@/lib/sanity-utils"
+import { getAllNotifications, getTodos, getUsers } from "@/lib/sanity-utils"
 
 export default async function Admin() {
   const session = await auth()
@@ -13,10 +13,11 @@ export default async function Admin() {
 
   const allTodos = await getTodos()
   const users = await getUsers()
+  const notifications = await getAllNotifications()
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <NavBar title="Admin Nadzor" />
+      <NavBar title="Admin Nadzor" session={session} />
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <p className="text-sm font-medium text-rose-700">Dostop samo za admin uporabnike</p>
@@ -26,7 +27,12 @@ export default async function Admin() {
           </p>
         </div>
 
-        <AdminTodoList initialTodos={allTodos} users={users} />
+        <AdminTodoList
+          initialTodos={allTodos}
+          users={users}
+          initialNotifications={notifications}
+          currentUserId={session.user.id}
+        />
       </main>
     </div>
   )

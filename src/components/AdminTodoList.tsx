@@ -1,15 +1,35 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import type { SanityTodo, SanityUser } from "@/lib/sanity-utils"
+import type { SanityNotification, SanityTodo, SanityUser } from "@/lib/sanity-utils"
 
 interface AdminTodoListProps {
   initialTodos: SanityTodo[]
   users: SanityUser[]
+  initialNotifications: SanityNotification[]
+  currentUserId: string
 }
 
-export default function AdminTodoList({ initialTodos, users }: AdminTodoListProps) {
+function formatDate(value?: string) {
+  if (!value) return "Brez roka"
+  return new Intl.DateTimeFormat("sl-SI", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value))
+}
+
+export default function AdminTodoList({
+  initialTodos,
+  users: initialUsers,
+  initialNotifications,
+  currentUserId,
+}: AdminTodoListProps) {
   const [todos, setTodos] = useState(initialTodos)
+  const [users, setUsers] = useState(initialUsers)
+  const [notifications, setNotifications] = useState(initialNotifications)
   const [selectedUser, setSelectedUser] = useState("all")
   const [error, setError] = useState("")
 
@@ -35,6 +55,58 @@ export default function AdminTodoList({ initialTodos, users }: AdminTodoListProp
     } catch (err) {
       console.error("Error deleting todo:", err)
       setError("Naloge ni bilo mogoce izbrisati.")
+    }
+  }
+
+  const deleteUser = async (id: string) => {
+    try {
+      setError("")
+
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: "DELETE",
+      })
+
+      const payload = await response.json()
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Delete failed")
+      }
+
+      setUsers((current) => current.filter((user) => user._id !== id))
+      setTodos((current) =>
+        current.filter((todo) => todo.user._id !== id && todo.createdBy._id !== id)
+      )
+      setNotifications((current) =>
+        current.filter((notification) => notification.createdBy._id !== id)
+      )
+
+      if (selectedUser === id) {
+        setSelectedUser("all")
+      }
+    } catch (err) {
+      console.error("Error deleting user:", err)
+      setError(err instanceof Error ? err.message : "Uporabnika ni bilo mogoce izbrisati.")
+    }
+  }
+
+  const deleteNotification = async (id: string) => {
+    try {
+      setError("")
+
+      const response = await fetch(`/api/admin/notifications/${id}`, {
+        method: "DELETE",
+      })
+
+      const payload = await response.json()
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Delete failed")
+      }
+
+      setNotifications((current) => current.filter((notification) => notification._id !== id))
+    } catch (err) {
+      console.error("Error deleting notification:", err)
+      setError(err instanceof Error ? err.message : "Obvestila ni bilo mogoce izbrisati.")
     }
   }
 
@@ -97,8 +169,8 @@ export default function AdminTodoList({ initialTodos, users }: AdminTodoListProp
               <p className="mt-2 text-3xl font-semibold text-slate-950">{todos.length}</p>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Filtriran prikaz</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-950">{filteredTodos.length}</p>
+              <p className="text-sm text-slate-500">Skupaj obvestil</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{notifications.length}</p>
             </div>
           </div>
         </article>
@@ -205,6 +277,9 @@ export default function AdminTodoList({ initialTodos, users }: AdminTodoListProp
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Registracija
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Akcije
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
@@ -226,8 +301,93 @@ export default function AdminTodoList({ initialTodos, users }: AdminTodoListProp
                   <td className="px-6 py-4 text-sm text-slate-500">
                     {new Date(user.createdAt).toLocaleDateString("sl-SI")}
                   </td>
+                  <td className="px-6 py-4 text-sm">
+                    {user._id === currentUserId ? (
+                      <span className="text-slate-400">Trenutni racun</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => deleteUser(user._id)}
+                        className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+                      >
+                        Izbrisi
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-6 py-4">
+          <h2 className="text-xl font-semibold text-slate-950">Admin obvestila</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Naslov
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Ustvaril
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Rok
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Datum
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Akcije
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {notifications.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
+                    Trenutno ni objavljenih obvestil.
+                  </td>
+                </tr>
+              ) : (
+                notifications.map((notification) => (
+                  <tr key={notification._id}>
+                    <td className="px-6 py-4 align-top">
+                      <div className="space-y-1">
+                        <p className="font-medium text-slate-900">{notification.title}</p>
+                        {notification.description ? (
+                          <p className="text-sm text-slate-500">{notification.description}</p>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 align-top text-sm text-slate-600">
+                      <p className="font-medium text-slate-900">
+                        {notification.createdBy.username}
+                      </p>
+                      <p>{notification.createdBy.email}</p>
+                    </td>
+                    <td className="px-6 py-4 align-top text-sm text-slate-500">
+                      {formatDate(notification.dueDate)}
+                    </td>
+                    <td className="px-6 py-4 align-top text-sm text-slate-500">
+                      {formatDate(notification.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 align-top">
+                      <button
+                        type="button"
+                        onClick={() => deleteNotification(notification._id)}
+                        className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+                      >
+                        Izbrisi
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

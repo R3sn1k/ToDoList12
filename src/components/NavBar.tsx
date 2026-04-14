@@ -2,14 +2,15 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { signOut, useSession } from "next-auth/react"
+import { signOut } from "next-auth/react"
+import type { Session } from "next-auth"
 
 interface NavBarProps {
   title?: string
+  session: Session
 }
 
-export function NavBar({ title = "TaskFlow" }: NavBarProps) {
-  const { data: session } = useSession()
+export function NavBar({ title = "TaskFlow", session }: NavBarProps) {
   const [open, setOpen] = useState(false)
 
   if (!session?.user) {
