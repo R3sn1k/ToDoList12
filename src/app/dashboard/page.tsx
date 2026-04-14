@@ -32,7 +32,6 @@ export default async function Dashboard() {
           initialTodos={todos}
           initialInvitations={invitations}
           initialNotifications={notifications}
-          isAdmin={session.user.role === "admin"}
         />
       </main>
     </div>

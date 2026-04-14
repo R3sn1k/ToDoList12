@@ -12,7 +12,6 @@ interface TodoListProps {
   initialTodos: SanityTodo[]
   initialInvitations: SanityTaskInvitation[]
   initialNotifications: SanityNotification[]
-  isAdmin: boolean
 }
 
 interface DraftTask {
@@ -24,18 +23,8 @@ interface DraftTask {
   subtasks: SanitySubtask[]
 }
 
-interface DraftNotification {
-  title: string
-  description: string
-  dueDate: string
-}
-
 function emptyTask(): DraftTask {
   return { title: "", description: "", dueDate: "", priority: false, inviteEmail: "", subtasks: [] }
-}
-
-function emptyNotification(): DraftNotification {
-  return { title: "", description: "", dueDate: "" }
 }
 
 function toLocalDateTime(value?: string) {
@@ -84,13 +73,11 @@ export default function TodoList({
   initialTodos,
   initialInvitations,
   initialNotifications,
-  isAdmin,
 }: TodoListProps) {
   const [todos, setTodos] = useState(initialTodos)
   const [invitations, setInvitations] = useState(initialInvitations)
   const [notifications, setNotifications] = useState(initialNotifications)
   const [draftTask, setDraftTask] = useState<DraftTask>(emptyTask())
-  const [draftNotification, setDraftNotification] = useState<DraftNotification>(emptyNotification())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTask, setEditingTask] = useState<DraftTask>(emptyTask())
   const [draggedId, setDraggedId] = useState<string | null>(null)
@@ -202,33 +189,6 @@ export default function TodoList({
       setError("Naloge ni bilo mogoce ustvariti.")
     } finally {
       setSaving(false)
-    }
-  }
-
-  const createNotification = async () => {
-    if (!draftNotification.title.trim()) {
-      setError("Obvestilo potrebuje naslov.")
-      return
-    }
-
-    try {
-      setError("")
-      const response = await fetch("/api/notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: draftNotification.title,
-          description: draftNotification.description,
-          dueDate: toIso(draftNotification.dueDate),
-        }),
-      })
-
-      const created = await response.json()
-      if (!response.ok) throw new Error(created.error ?? "Obvestila ni bilo mogoce ustvariti.")
-      setDraftNotification(emptyNotification())
-    } catch (err) {
-      console.error(err)
-      setError("Obvestila ni bilo mogoce ustvariti.")
     }
   }
 
@@ -513,19 +473,6 @@ export default function TodoList({
               <button type="button" onClick={createTask} disabled={saving} className="w-full rounded-full bg-slate-950 px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Shranjujem..." : "Ustvari nalogo"}</button>
             </div>
           </div>
-
-          {isAdmin ? (
-            <div className="rounded-[2.2rem] border border-white/50 bg-white/75 p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Skrbniško obvestilo</p>
-              <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">Objavi obvestilo za vse</h2>
-              <div className="mt-5 space-y-3">
-                <input value={draftNotification.title} onChange={(event) => setDraftNotification((current) => ({ ...current, title: event.target.value }))} placeholder="Naslov dogodka ali naloge" className="w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400" />
-                <textarea value={draftNotification.description} onChange={(event) => setDraftNotification((current) => ({ ...current, description: event.target.value }))} rows={4} placeholder="Na primer: V nedeljo so volitve. Obvezno pojdite volit." className="w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400" />
-                <input type="datetime-local" value={draftNotification.dueDate} onChange={(event) => setDraftNotification((current) => ({ ...current, dueDate: event.target.value }))} className="w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400" />
-                <button type="button" onClick={createNotification} className="w-full rounded-full bg-slate-950 px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-slate-800">Objavi obvestilo</button>
-              </div>
-            </div>
-          ) : null}
 
         </div>
 

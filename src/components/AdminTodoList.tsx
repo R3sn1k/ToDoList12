@@ -10,6 +10,20 @@ interface AdminTodoListProps {
   currentUserId: string
 }
 
+interface DraftNotification {
+  title: string
+  description: string
+  dueDate: string
+}
+
+function emptyNotification(): DraftNotification {
+  return { title: "", description: "", dueDate: "" }
+}
+
+function toIso(value: string) {
+  return value ? new Date(value).toISOString() : null
+}
+
 function formatDate(value?: string) {
   if (!value) return "Brez roka"
   return new Intl.DateTimeFormat("sl-SI", {
@@ -30,6 +44,7 @@ export default function AdminTodoList({
   const [todos, setTodos] = useState(initialTodos)
   const [users, setUsers] = useState(initialUsers)
   const [notifications, setNotifications] = useState(initialNotifications)
+  const [draftNotification, setDraftNotification] = useState<DraftNotification>(emptyNotification())
   const [selectedUser, setSelectedUser] = useState("all")
   const [error, setError] = useState("")
 
@@ -110,6 +125,39 @@ export default function AdminTodoList({
     }
   }
 
+  const createNotification = async () => {
+    if (!draftNotification.title.trim()) {
+      setError("Obvestilo potrebuje naslov.")
+      return
+    }
+
+    try {
+      setError("")
+
+      const response = await fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: draftNotification.title,
+          description: draftNotification.description,
+          dueDate: toIso(draftNotification.dueDate),
+        }),
+      })
+
+      const created = await response.json()
+
+      if (!response.ok) {
+        throw new Error(created.error ?? "Obvestila ni bilo mogoce ustvariti.")
+      }
+
+      setNotifications((current) => [created, ...current])
+      setDraftNotification(emptyNotification())
+    } catch (err) {
+      console.error("Error creating notification:", err)
+      setError(err instanceof Error ? err.message : "Obvestila ni bilo mogoce ustvariti.")
+    }
+  }
+
   const toggleTodo = async (id: string) => {
     const currentTodo = todos.find((todo) => todo._id === id)
     if (!currentTodo) return
@@ -139,6 +187,56 @@ export default function AdminTodoList({
 
   return (
     <section className="space-y-6">
+      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="p-6">
+          <div className="rounded-[2.2rem] border border-white/50 bg-white/75 p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] backdrop-blur">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+              Skrbniško obvestilo
+            </p>
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">
+              Objavi obvestilo za vse
+            </h2>
+            <div className="mt-5 space-y-3">
+              <input
+                value={draftNotification.title}
+                onChange={(event) =>
+                  setDraftNotification((current) => ({ ...current, title: event.target.value }))
+                }
+                placeholder="Naslov dogodka ali naloge"
+                className="w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400"
+              />
+              <textarea
+                value={draftNotification.description}
+                onChange={(event) =>
+                  setDraftNotification((current) => ({
+                    ...current,
+                    description: event.target.value,
+                  }))
+                }
+                rows={4}
+                placeholder="Na primer: V nedeljo so volitve. Obvezno pojdite volit."
+                className="w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400"
+              />
+              <input
+                type="datetime-local"
+                value={draftNotification.dueDate}
+                onChange={(event) =>
+                  setDraftNotification((current) => ({ ...current, dueDate: event.target.value }))
+                }
+                className="w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400"
+              />
+              <button
+                type="button"
+                onClick={createNotification}
+                className="w-full rounded-full bg-slate-950 px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-slate-800"
+              >
+                Objavi obvestilo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[1.2fr_2fr]">
         <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-slate-950">Filtri</h2>
