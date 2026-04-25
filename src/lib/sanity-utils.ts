@@ -6,6 +6,10 @@ export interface SanityUser {
   username: string
   passwordHash?: string
   recoveryCodeHash?: string
+  authProvider: "credentials" | "google" | "clerk"
+  clerkUserId?: string
+  googleId?: string
+  avatarUrl?: string
   role: "user" | "admin"
   createdAt: string
 }
@@ -26,6 +30,8 @@ export interface SanityTodo {
   dueDate?: string
   completedAt?: string
   createdAt: string
+  reminderEnabled: boolean
+  reminderSentAt?: string
   subtasks: SanitySubtask[]
   user: {
     _id: string
@@ -92,6 +98,10 @@ interface CreateUserInput {
   username: string
   passwordHash: string
   recoveryCodeHash: string
+  authProvider?: "credentials" | "google" | "clerk"
+  clerkUserId?: string
+  googleId?: string
+  avatarUrl?: string
   role?: "user" | "admin"
 }
 
@@ -99,6 +109,11 @@ interface UpdateUserInput {
   email?: string
   username?: string
   passwordHash?: string
+  recoveryCodeHash?: string
+  authProvider?: "credentials" | "google" | "clerk"
+  clerkUserId?: string
+  googleId?: string
+  avatarUrl?: string
 }
 
 interface CreateTodoInput {
@@ -109,6 +124,7 @@ interface CreateTodoInput {
   dueDate?: string
   priority?: boolean
   priorityRank?: number
+  reminderEnabled?: boolean
   subtasks?: SanitySubtask[]
 }
 
@@ -119,6 +135,8 @@ export type TodoUpdates = {
   priority?: boolean
   priorityRank?: number
   dueDate?: string | null
+  reminderEnabled?: boolean
+  reminderSentAt?: string | null
   subtasks?: SanitySubtask[]
   userId?: string
 }
@@ -129,6 +147,10 @@ const userProjection = `{
   username,
   passwordHash,
   recoveryCodeHash,
+  "authProvider": coalesce(authProvider, "clerk"),
+  clerkUserId,
+  googleId,
+  avatarUrl,
   role,
   createdAt
 }`
@@ -142,6 +164,8 @@ const todoProjection = `{
   priorityRank,
   dueDate,
   completedAt,
+  "reminderEnabled": coalesce(reminderEnabled, false),
+  reminderSentAt,
   createdAt,
   "subtasks": coalesce(subtasks, []),
   user->{
@@ -268,6 +292,20 @@ export async function getUsers(): Promise<SanityUser[]> {
   return client.fetch(`*[_type == "user"] | order(createdAt desc) ${userProjection}`)
 }
 
+export async function getUserByUsername(username: string): Promise<SanityUser | null> {
+  return client.fetch(
+    `*[_type == "user" && lower(username) == lower($username)][0] ${userProjection}`,
+    { username }
+  )
+}
+
+export async function getUserByClerkId(clerkUserId: string): Promise<SanityUser | null> {
+  return client.fetch(
+    `*[_type == "user" && clerkUserId == $clerkUserId][0] ${userProjection}`,
+    { clerkUserId }
+  )
+}
+
 export async function createUser(input: CreateUserInput): Promise<SanityUser> {
   const createdAt = new Date().toISOString()
 
@@ -277,8 +315,12 @@ export async function createUser(input: CreateUserInput): Promise<SanityUser> {
     username: input.username,
     passwordHash: input.passwordHash,
     recoveryCodeHash: input.recoveryCodeHash,
+    authProvider: input.authProvider ?? "credentials",
+    ...(input.clerkUserId ? { clerkUserId: input.clerkUserId } : {}),
     role: input.role ?? "user",
     createdAt,
+    ...(input.googleId ? { googleId: input.googleId } : {}),
+    ...(input.avatarUrl ? { avatarUrl: input.avatarUrl } : {}),
   })
 
   return {
@@ -287,13 +329,20 @@ export async function createUser(input: CreateUserInput): Promise<SanityUser> {
     username: input.username,
     passwordHash: input.passwordHash,
     recoveryCodeHash: input.recoveryCodeHash,
+    authProvider: input.authProvider ?? "credentials",
+    googleId: input.googleId,
+    avatarUrl: input.avatarUrl,
     role: input.role ?? "user",
     createdAt,
   }
 }
 
 export async function updateUser(id: string, updates: UpdateUserInput): Promise<SanityUser> {
-  await client.patch(id).set(updates).commit()
+  const sanitizedUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined)
+  )
+
+  await client.patch(id).set(sanitizedUpdates).commit()
 
   const updatedUser = await getUserById(id)
   if (!updatedUser) {
@@ -340,6 +389,7 @@ export async function createTodo(input: CreateTodoInput): Promise<SanityTodo> {
     priority: input.priority ?? false,
     priorityRank: input.priority ? input.priorityRank ?? 1 : 999,
     dueDate: input.dueDate,
+    reminderEnabled: input.reminderEnabled ?? true,
     completedAt: completion.completedAt ?? undefined,
     subtasks: completion.subtasks,
     createdAt,
@@ -378,13 +428,17 @@ export async function updateTodo(id: string, updates: TodoUpdates): Promise<Sani
   const nextSubtasks = updates.subtasks ?? existingTodo.subtasks ?? []
   const completion = resolveCompletionState(nextSubtasks, updates.completed)
 
-  const setPayload: Record<string, string | boolean | number | SanitySubtask[] | { _type: "reference"; _ref: string }> = {
+  const setPayload: Record<
+    string,
+    string | boolean | number | SanitySubtask[] | { _type: "reference"; _ref: string }
+  > = {
     completed: completion.completed,
     priority: updates.priority ?? existingTodo.priority,
     priorityRank:
       updates.priority === false
         ? 999
         : updates.priorityRank ?? existingTodo.priorityRank ?? 999,
+    reminderEnabled: updates.reminderEnabled ?? Boolean(existingTodo.reminderEnabled),
     subtasks: completion.subtasks,
   }
 
@@ -398,6 +452,10 @@ export async function updateTodo(id: string, updates: TodoUpdates): Promise<Sani
 
   if (updates.dueDate !== undefined && updates.dueDate !== null) {
     setPayload.dueDate = updates.dueDate
+  }
+
+  if (updates.reminderSentAt !== undefined && updates.reminderSentAt !== null) {
+    setPayload.reminderSentAt = updates.reminderSentAt
   }
 
   if (completion.completedAt) {
@@ -415,6 +473,14 @@ export async function updateTodo(id: string, updates: TodoUpdates): Promise<Sani
 
   if (updates.dueDate === null) {
     patch = patch.unset(["dueDate"])
+  }
+
+  if (
+    updates.reminderSentAt === null ||
+    updates.dueDate !== undefined ||
+    updates.reminderEnabled !== undefined
+  ) {
+    patch = patch.unset(["reminderSentAt"])
   }
 
   if (!completion.completedAt) {
@@ -646,6 +712,22 @@ export async function reorderPriorityTodos(userId: string, orderedTodoIds: strin
         })
         .commit()
     )
+  )
+}
+
+export async function getTodosDueForReminder(now = new Date()) {
+  const oneDayAhead = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
+
+  return client.fetch<SanityTodo[]>(
+    `*[_type == "todo"
+      && reminderEnabled == true
+      && completed != true
+      && defined(dueDate)
+      && dueDate > $now
+      && dueDate <= $oneDayAhead
+      && !defined(reminderSentAt)]
+      | order(dueDate asc) ${todoProjection}`,
+    { now: now.toISOString(), oneDayAhead }
   )
 }
 

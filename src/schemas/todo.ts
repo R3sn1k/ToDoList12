@@ -45,6 +45,17 @@ export const todo = defineType({
       type: "datetime",
     }),
     defineField({
+      name: "reminderEnabled",
+      title: "Email Reminder Enabled",
+      type: "boolean",
+      initialValue: true,
+    }),
+    defineField({
+      name: "reminderSentAt",
+      title: "Reminder Sent At",
+      type: "datetime",
+    }),
+    defineField({
       name: "subtasks",
       title: "Subtasks",
       type: "array",

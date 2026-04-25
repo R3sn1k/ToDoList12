@@ -39,8 +39,16 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const { title, description, completed, dueDate, priority, priorityRank, subtasks } =
-      await request.json()
+    const {
+      title,
+      description,
+      completed,
+      dueDate,
+      priority,
+      priorityRank,
+      reminderEnabled,
+      subtasks,
+    } = await request.json()
 
     const existingTodo = await getTodoByIdForUser(id, session.user.id)
 
@@ -55,6 +63,7 @@ export async function PATCH(
       dueDate?: string | null
       priority?: boolean
       priorityRank?: number
+      reminderEnabled?: boolean
       subtasks?: { _key?: string; title: string; completed: boolean }[]
     } = {}
 
@@ -64,6 +73,7 @@ export async function PATCH(
     if (dueDate !== undefined) updates.dueDate = dueDate
     if (priority !== undefined) updates.priority = priority
     if (priorityRank !== undefined) updates.priorityRank = priorityRank
+    if (reminderEnabled !== undefined) updates.reminderEnabled = reminderEnabled
     if (subtasks !== undefined) updates.subtasks = subtasks
 
     const updatedTodo = await updateTodo(id, updates)

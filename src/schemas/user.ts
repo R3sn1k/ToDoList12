@@ -13,13 +13,13 @@ export const user = defineType({
     }),
     defineField({
       name: "username",
-      title: "Uporabniško ime",
+      title: "Uporabnisko ime",
       type: "string",
       validation: (rule) => rule.required(),
     }),
     defineField({
       name: "passwordHash",
-      title: "Zgoščeno geslo",
+      title: "Zgosceno geslo",
       type: "string",
       readOnly: true,
       validation: (rule) => rule.required(),
@@ -30,6 +30,36 @@ export const user = defineType({
       type: "string",
       readOnly: true,
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "authProvider",
+      title: "Nacin prijave",
+      type: "string",
+      options: {
+        list: [
+          { title: "Clerk", value: "clerk" },
+          { title: "E-posta in geslo", value: "credentials" },
+          { title: "Google", value: "google" },
+        ],
+      },
+      initialValue: "clerk",
+    }),
+    defineField({
+      name: "clerkUserId",
+      title: "Clerk User ID",
+      type: "string",
+      readOnly: true,
+    }),
+    defineField({
+      name: "googleId",
+      title: "Google ID",
+      type: "string",
+      readOnly: true,
+    }),
+    defineField({
+      name: "avatarUrl",
+      title: "Avatar URL",
+      type: "url",
     }),
     defineField({
       name: "role",

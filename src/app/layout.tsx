@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "TaskFlow",
@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="sl" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        <ClerkProvider>{children}</ClerkProvider>
       </body>
     </html>
   );

@@ -7,7 +7,7 @@ import { getUserById, updateUserPassword } from "@/lib/sanity-utils"
 
 const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Vnesi trenutno geslo"),
+    currentPassword: z.string().optional(),
     newPassword: passwordSchema,
     confirmPassword: z.string().min(1, "Potrdi novo geslo"),
   })
@@ -24,6 +24,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    if (session.user.authProvider === "clerk") {
+      return NextResponse.json(
+        { error: "Geslo se pri Clerk uporabnikih ureja v Clerk nastavitvah." },
+        { status: 400 }
+      )
+    }
+
     const payload = await request.json()
     const result = changePasswordSchema.safeParse(payload)
 
@@ -36,26 +43,23 @@ export async function PATCH(request: NextRequest) {
 
     const user = await getUserById(session.user.id)
 
-    if (!user?.passwordHash) {
-      return NextResponse.json(
-        { error: "Uporabnika ni bilo mogoce preveriti." },
-        { status: 400 }
-      )
+    if (!user) {
+      return NextResponse.json({ error: "Uporabnika ni bilo mogoce preveriti." }, { status: 400 })
     }
 
-    const passwordMatches = await bcrypt.compare(
-      result.data.currentPassword,
-      user.passwordHash
-    )
+    if (user.passwordHash) {
+      if (!result.data.currentPassword) {
+        return NextResponse.json({ error: "Vnesi trenutno geslo." }, { status: 400 })
+      }
 
-    if (!passwordMatches) {
-      return NextResponse.json(
-        { error: "Trenutno geslo ni pravilno." },
-        { status: 400 }
-      )
+      const passwordMatches = await bcrypt.compare(result.data.currentPassword, user.passwordHash)
+
+      if (!passwordMatches) {
+        return NextResponse.json({ error: "Trenutno geslo ni pravilno." }, { status: 400 })
+      }
     }
 
-    if (result.data.currentPassword === result.data.newPassword) {
+    if (result.data.currentPassword && result.data.currentPassword === result.data.newPassword) {
       return NextResponse.json(
         { error: "Novo geslo mora biti drugacno od trenutnega." },
         { status: 400 }
