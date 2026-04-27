@@ -66,6 +66,10 @@ export default function Home() {
               Napreden prostor za naloge, tokove in administracijo
             </div>
 
+            <div className="mt-4 inline-flex items-center rounded-full border border-slate-200/80 bg-white/70 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.35)] backdrop-blur">
+              TaskFlow v1.1
+            </div>
+
             <h2 className="mt-8 max-w-4xl text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-8xl">
               To ni vec
               <span className="block text-slate-500">osnovni task board.</span>
